@@ -5,15 +5,23 @@ export const todoContext = React.createContext();
 
 const INIT_STATE = {
   todos: [],
+  oneTodo: null,
 };
+
+// { ...state, todos: action.payload }
+// { todos: action.payload }
 function reducer(state = INIT_STATE, action) {
   switch (action.type) {
     case "GET_TODOS":
       return { ...state, todos: action.payload };
+    case "GET_ONE_TODO":
+      return { ...state, oneTodo: action.payload };
     default:
       return state;
   }
 }
+// "GET_TODOS" === "GET_TODOS" // true
+// "GET_ONE_TODO" === "GET_TODOS" // false
 const TodoContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, INIT_STATE);
   //! CRUD
@@ -22,6 +30,7 @@ const TodoContextProvider = ({ children }) => {
   async function createTodo(newTodo) {
     await axios.post(API, newTodo);
   }
+  //! Read
   async function getTodos() {
     let res = await axios(API);
     dispatch({
@@ -30,8 +39,36 @@ const TodoContextProvider = ({ children }) => {
     });
     // console.log(res);
   }
+  //! Delete
+  async function deleteTodo(id) {
+    await axios.delete(`${API}/${id}`);
+    getTodos();
+  }
+  //! Get for edit
+  async function getOneTodo(id) {
+    let res = await axios(`${API}/${id}`);
+    dispatch({
+      type: "GET_ONE_TODO",
+      payload: res.data,
+    });
+    // console.log(res);
+  }
+  //! Update
+  async function updateTodo(id, editedTodo) {
+    await axios.patch(`${API}/${id}`, editedTodo);
+    getTodos();
+  }
   return (
-    <todoContext.Provider value={{ todos: state.todos, createTodo, getTodos }}>
+    <todoContext.Provider
+      value={{
+        todos: state.todos,
+        oneTodo: state.oneTodo,
+        createTodo,
+        getTodos,
+        deleteTodo,
+        getOneTodo,
+        updateTodo,
+      }}>
       {children}
     </todoContext.Provider>
   );
